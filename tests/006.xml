@@ -1,0 +1,4 @@
+<root>
+  <x foo="1" baz="2"/>
+  <bar>2</bar>
+</root>

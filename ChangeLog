@@ -1,0 +1,13 @@
+* 0.3.0.1 (2011-07-27)
+	- Bugfix for printing of attributes.
+
+* 0.3.0.0 (2011-07-25)
+	- Support for arbitrary lookahead for enumerator-based parsers.
+	  As a consequence, some of the type signatures of some functions in
+	  Text.Roundtrip.Xml.Enumerator.Parser were changed.
+	- Fixed bug with backtracking and XML printers.
+	- Introduced tests
+
+* 0.2.0.1 (2011-07-10)
+	- Started ChangeLog.
+	- Bumped dependency for blaze-builder from 0.2.* to 0.3.*.
