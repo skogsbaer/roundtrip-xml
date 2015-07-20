@@ -14,14 +14,16 @@ module Text.Roundtrip.Xml.Parser (
 
 ) where
 
+import Prelude hiding ((*>),(<*))
+
 import Control.Monad (unless, foldM)
 import Control.Monad.State
 import Control.Monad.Identity (Identity, runIdentity)
 import Control.Exception (ErrorCall(..), SomeException, Exception, toException)
 
-import qualified Data.Enumerator as E
-import qualified Data.Enumerator.List as EL
-import qualified Text.XML.Stream.Parse as EP
+import qualified Data.Conduit as C
+import qualified Data.Conduit.List as CL
+import qualified Text.XML.Stream.Parse as CXP
 import qualified Data.Map as Map
 import Data.Map (Map)
 import qualified Data.List as List
@@ -52,21 +54,17 @@ defaultEntityRenderer = const Nothing
 
 type XmlParser a = GenXmlParser [RtEventWithPos] Identity a
 
-type EventGen a = EP.ParseSettings -> E.Enumeratee a Event Identity [Event]
+type EventGen a = CXP.ParseSettings -> C.Conduit a (Either SomeException) Event
 
 genEvents :: [a] -> EventGen a -> Either SomeException [Event]
 genEvents items f =
-    runIdentity $ E.run $
-                  E.joinI $
-                  E.enumList chunkSize items E.$$
-                  f EP.def E.$$
-                  EL.consume
-    where
-      chunkSize = 1
+    CL.sourceList items C.=$= f CXP.def C.$$ CL.consume
 
 -- Parsing a string/text/bytestring into a list of events into is done via
 -- enumerators. This is not optimal because the resulting list is too strict.
 -- However, currently no other functions exists for such a conversion.
+
+-- Switched to conduit. Don't know the relevance of the above statement with regards to that.
 
 runXmlParserGen :: XmlParser a -> SourceName -> EntityRenderer -> [b] -> EventGen b -> (Either ParseError a)
 runXmlParserGen p src er items gen =
@@ -75,19 +73,19 @@ runXmlParserGen p src er items gen =
       Right events -> runXmlParser p src er events
 
 runXmlParserString :: XmlParser a -> SourceName -> EntityRenderer -> String -> (Either ParseError a)
-runXmlParserString p src e str = runXmlParserGen p src e [T.pack str] EP.parseText
+runXmlParserString p src e str = runXmlParserGen p src e [T.pack str] CXP.parseText'
 
 runXmlParserText :: XmlParser a -> SourceName -> EntityRenderer -> T.Text -> (Either ParseError a)
-runXmlParserText p src e t = runXmlParserGen p src e [t] EP.parseText
+runXmlParserText p src e t = runXmlParserGen p src e [t] CXP.parseText'
 
 runXmlParserLazyText :: XmlParser a -> SourceName -> EntityRenderer -> TL.Text -> (Either ParseError a)
-runXmlParserLazyText p src e t = runXmlParserGen p src e (TL.toChunks t) EP.parseText
+runXmlParserLazyText p src e t = runXmlParserGen p src e (TL.toChunks t) CXP.parseText'
 
 runXmlParserByteString :: XmlParser a -> SourceName -> EntityRenderer -> BS.ByteString -> (Either ParseError a)
-runXmlParserByteString p src e bs = runXmlParserGen p src e [bs] EP.parseBytes
+runXmlParserByteString p src e bs = runXmlParserGen p src e [bs] CXP.parseBytes
 
 runXmlParserLazyByteString :: XmlParser a -> SourceName -> EntityRenderer -> BSL.ByteString -> (Either ParseError a)
-runXmlParserLazyByteString p src e bs = runXmlParserGen p src e (BSL.toChunks bs) EP.parseBytes
+runXmlParserLazyByteString p src e bs = runXmlParserGen p src e (BSL.toChunks bs) CXP.parseBytes
 
 runXmlParser :: XmlParser a -> SourceName -> EntityRenderer -> [Event] -> (Either ParseError a)
 runXmlParser p sourceName renderer events =

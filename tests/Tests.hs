@@ -14,17 +14,12 @@ import qualified Data.Text as T
 
 import qualified Data.List as List
 import Data.Char (isSpace)
-import Data.IORef (IORef)
 
 import Text.Roundtrip
 import Text.Roundtrip.Xml
-import Text.Roundtrip.Xml.Enumerator
-
-import Data.Enumerator
-import Data.Enumerator.Binary (enumFile)
-import Text.XML.Enumerator.Parse (parseBytes, decodeEntities)
 
 import Test.Framework
+import Test.Framework.TestManager
 
 --
 -- Specification for expressions
@@ -121,71 +116,6 @@ prop_pilSpec2Roundtrip arg =
     ==>
     checkRoundtrip pilSpec2 arg
 
-test_pil11 =
-    do x <- parseFromFile (testFile "001.xml") pilSpec1
-       assertEqual (Right []) x
-
-test_pil12 =
-    do x <- parseFromFile (testFile "001.xml") pilSpec2
-       assertEqual (Right []) x
-
-test_pil21 =
-    do x <- parseFromFile (testFile "002.xml") pilSpec1
-       assertEqual (Left [""]) x
-
-test_pil22 =
-    do x <- parseFromFile (testFile "002.xml") pilSpec2
-       assertEqual (Left [""]) x
-
-test_pil31 =
-    do x <- parseFromFile (testFile "003.xml") pilSpec1
-       assertEqual (Right [""]) x
-
-test_pil32 =
-    do x <- parseFromFile (testFile "003.xml") pilSpec2
-       assertEqual (Right [""]) x
-
-test_deepLookAhead =
-    do x <- parseFromFile (testFile "004.xml") spec
-       assertEqual (Right "you got it!") x
-    where
-      spec :: XmlSyntax d => d (Either Text Text)
-      spec =
-             left <$> xmlElem "a" (xmlElem "b" (xmlElem "c" (xmlElem "d"
-                        (xmlElem "e" (xmlElem "f" (xmlElem "h" xmlText))))))
-        <||> right <$> xmlElem "a" (xmlElem "b" (xmlElem "c" (xmlElem "d"
-                        (xmlElem "e" (xmlElem "f" (xmlElem "g" xmlText))))))
-
---
--- Backtracking inside attributes
---
-backtrackingAttrSpec :: XmlSyntax d => d (T.Text, T.Text)
-backtrackingAttrSpec =
-    xmlElem "root"
-      (xmlElem "x" (xmlAttrValue "foo" <*> xmlAttrValue "bar")) <||>
-    xmlElem "root"
-      (xmlElem "x" (xmlAttrValue "foo" <* xmlFixedAttr "baz" "2") <*> xmlElem "bar" xmlText)
-
-test_back1 =
-    do x <- parseFromFile (testFile "005.xml") backtrackingAttrSpec
-       assertEqual ("1", "2") x
-
-test_back2 =
-    do x <- parseFromFile (testFile "006.xml") backtrackingAttrSpec
-       assertEqual ("1", "2") x
-
-backtrackingAttrSpec2 :: XmlSyntax d => d T.Text
-backtrackingAttrSpec2 =
-    xmlElem "root" (xmlAttrValue "foo" <|> xmlAttrValue "bar")
-
-test_back3 =
-    do x <- parseFromFile (testFile "007.xml") backtrackingAttrSpec2
-       assertEqual "1" x
-
-test_back4 =
-    do x <- parseFromFile (testFile "008.xml") backtrackingAttrSpec2
-       assertEqual "1" x
-
 --
 -- Utils & main
 --
@@ -211,29 +141,6 @@ checkRoundtrip spec val =
                    else error (show val ++ " /= " ++ show val')
             Left err -> error ("Parsing of " ++ show t ++ " failed: " ++ show err)
 
-parseFromFileEnum :: (Eq a, Show a)
-                  => FilePath -> XmlParseIteratee IORef IO a-> IO a
-parseFromFileEnum fname p =
-    do x <- run $ joinI $
-                  enumFile fname $$
-                  parseBytes decodeEntities $$
-                  parseXml fname defaultEntityRenderer p
-       case x of
-         Right y -> return y
-         Left ex -> throw ex
-
-parseFromFile :: (Eq a, Show a)
-              => FilePath -> (forall d . XmlSyntax d => d a) -> IO a
-parseFromFile fname p =
-    do bs <- BS.readFile fname
-       case runXmlParserByteString p fname defaultEntityRenderer bs of
-         Right x ->
-             do x' <- parseFromFileEnum fname p
-                assertEqualVerbose
-                  "mismatch between regular parsing and enumerator-based parsing" x x'
-                return x
-         Left err -> fail (show err)
-
 main =
     do args <- getArgs
-       runTestWithArgs args allHTFTests
+       runTestWithArgs args htf_thisModulesTests
