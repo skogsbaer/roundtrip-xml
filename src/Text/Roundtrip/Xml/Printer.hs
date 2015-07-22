@@ -14,7 +14,6 @@ import Control.Monad.Except
 import Control.Monad.Identity
 import Control.Exception (SomeException)
 
-import Control.Monad.Base
 import Control.Monad.Primitive
 
 import System.IO.Unsafe (unsafePerformIO)

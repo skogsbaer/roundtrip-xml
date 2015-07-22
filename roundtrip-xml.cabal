@@ -23,6 +23,10 @@ Flag tests
   description: Build test suite
   default:     False
 
+Flag oldmtl
+  description: Use mtl < 2.2
+  default:     False
+
 Executable tests
   If flag(tests)
     Build-Depends:
@@ -54,13 +58,17 @@ Library
     , bytestring
     , containers
     , exceptions
-    , mtl
     , text
     , conduit
     , xml-conduit
     , xml-types
     , primitive
-    , transformers-base
+    , transformers
     , pretty
     , roundtrip
     , roundtrip-string
+  if flag(oldmtl)
+    Build-depends: mtl < 2.2, mtl-compat >= 0.2
+  else
+    Build-depends: mtl >= 2.2
+
