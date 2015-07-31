@@ -42,8 +42,6 @@ data PxEvent = XmlTypesEvent Event
 -- FIXME: don't use lists for  collecting the events, this makes an inefficient
 -- monoid. Better use Data.Sequence?!
 
--- Still relevant?
-
 newtype XmlPrinter a = XmlPrinter { unXmlPrinter :: Printer Identity [PxEvent] a }
 
 instance IsoFunctor XmlPrinter where
@@ -62,8 +60,6 @@ instance Syntax XmlPrinter where
 -- Rendering a list of events into a string/text/bytestring is done via
 -- enumerators. This is not optimal because the resulting list is too strict.
 -- However, currently no other functions exists for such a conversion.
-
--- Switched to conduit. Don't know the relevance of the above statement with regards to that.
 
 runXmlPrinterGen :: (PrimMonad m) => XmlPrinter a -> a
                  -> (m (Either SomeException [c]) -> Either SomeException [c])

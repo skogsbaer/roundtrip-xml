@@ -64,8 +64,6 @@ genEvents items f =
 -- enumerators. This is not optimal because the resulting list is too strict.
 -- However, currently no other functions exists for such a conversion.
 
--- Switched to conduit. Don't know the relevance of the above statement with regards to that.
-
 runXmlParserGen :: XmlParser a -> SourceName -> EntityRenderer -> [b] -> EventGen b -> (Either ParseError a)
 runXmlParserGen p src er items gen =
     case genEvents items gen of
