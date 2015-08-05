@@ -1,5 +1,5 @@
 Name:           roundtrip-xml
-Version:        0.3.0.5
+Version:        0.4.0.0
 Synopsis:       Bidirectional (de-)serialization for XML.
 Description:    Roundtrip allows the definition of bidirectional
                 (de-)serialization specifications. This package provides
@@ -23,6 +23,10 @@ Flag tests
   description: Build test suite
   default:     False
 
+Flag oldmtl
+  description: Use mtl < 2.2
+  default:     False
+
 Executable tests
   If flag(tests)
     Build-Depends:
@@ -34,9 +38,6 @@ Executable tests
       , roundtrip
       , roundtrip-string
       , roundtrip-xml
-      , enumerator
-      , xml-enumerator
-      , reference
   Else
     Buildable: False
   Hs-Source-Dirs: tests
@@ -48,9 +49,6 @@ Library
       Text.Roundtrip.Xml
     , Text.Roundtrip.Xml.Printer
     , Text.Roundtrip.Xml.Parser
-    , Text.Roundtrip.Xml.Enumerator
-    , Text.Roundtrip.Xml.Enumerator.Printer
-    , Text.Roundtrip.Xml.Enumerator.Parser
   Other-modules:
       Text.Roundtrip.Xml.ParserInternal
     , Text.Roundtrip.Xml.Pretty
@@ -59,14 +57,18 @@ Library
     , safe
     , bytestring
     , containers
-    , mtl
+    , exceptions
     , text
-    , enumerator
-    , xml-enumerator
+    , conduit
+    , xml-conduit
     , xml-types
-    , blaze-builder
-    , blaze-builder-enumerator
+    , primitive
+    , transformers
     , pretty
-    , reference
     , roundtrip
     , roundtrip-string
+  if flag(oldmtl)
+    Build-depends: mtl < 2.2, mtl-compat >= 0.2
+  else
+    Build-depends: mtl >= 2.2
+

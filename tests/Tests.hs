@@ -14,17 +14,12 @@ import qualified Data.Text as T
 
 import qualified Data.List as List
 import Data.Char (isSpace)
-import Data.IORef (IORef)
 
 import Text.Roundtrip
 import Text.Roundtrip.Xml
-import Text.Roundtrip.Xml.Enumerator
-
-import Data.Enumerator
-import Data.Enumerator.Binary (enumFile)
-import Text.XML.Enumerator.Parse (parseBytes, decodeEntities)
 
 import Test.Framework
+import Test.Framework.TestManager
 
 --
 -- Specification for expressions
@@ -211,29 +206,14 @@ checkRoundtrip spec val =
                    else error (show val ++ " /= " ++ show val')
             Left err -> error ("Parsing of " ++ show t ++ " failed: " ++ show err)
 
-parseFromFileEnum :: (Eq a, Show a)
-                  => FilePath -> XmlParseIteratee IORef IO a-> IO a
-parseFromFileEnum fname p =
-    do x <- run $ joinI $
-                  enumFile fname $$
-                  parseBytes decodeEntities $$
-                  parseXml fname defaultEntityRenderer p
-       case x of
-         Right y -> return y
-         Left ex -> throw ex
-
 parseFromFile :: (Eq a, Show a)
               => FilePath -> (forall d . XmlSyntax d => d a) -> IO a
 parseFromFile fname p =
     do bs <- BS.readFile fname
        case runXmlParserByteString p fname defaultEntityRenderer bs of
-         Right x ->
-             do x' <- parseFromFileEnum fname p
-                assertEqualVerbose
-                  "mismatch between regular parsing and enumerator-based parsing" x x'
-                return x
+         Right x -> return x
          Left err -> fail (show err)
 
 main =
     do args <- getArgs
-       runTestWithArgs args allHTFTests
+       runTestWithArgs args htf_thisModulesTests
